@@ -193,4 +193,8 @@ function searchEventsForHome($current_user_id, $search_name = '', $start_date = 
     }
     return $events;
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
 ?>

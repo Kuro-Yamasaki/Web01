@@ -71,6 +71,7 @@ $registrations = getRegistrationsByEvent($event_id);
         .btn:hover {
             background: #ddd;
         }
+<<<<<<< HEAD
 
         .modal {
             display: none; /* ซ่อนไว้เป็นค่าเริ่มต้น */
@@ -112,6 +113,8 @@ $registrations = getRegistrationsByEvent($event_id);
             text-decoration: underline;
             cursor: pointer;
         }
+=======
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
     </style>
 </head>
 
@@ -125,6 +128,11 @@ $registrations = getRegistrationsByEvent($event_id);
             <tr>
                 <th>รหัสสมัคร</th>
                 <th>ชื่อ-นามสกุล</th>
+<<<<<<< HEAD
+=======
+                <th>เพศ</th>
+                <th>จังหวัด</th>
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
                 <th>สถานะปัจจุบัน</th>
                 <th>จัดการอนุมัติ</th>
             </tr>
@@ -134,6 +142,7 @@ $registrations = getRegistrationsByEvent($event_id);
                 <?php foreach ($registrations as $reg): ?>
                     <tr>
                         <td><?php echo $reg['registration_id']; ?></td>
+<<<<<<< HEAD
                         <td style="text-align: left;">
                             <a class="user-link" 
                                data-name="<?php echo htmlspecialchars($reg['name']); ?>"
@@ -143,6 +152,11 @@ $registrations = getRegistrationsByEvent($event_id);
                                <?php echo htmlspecialchars($reg['name']); ?>
                             </a>
                         </td>
+=======
+                        <td style="text-align: left;"><?php echo htmlspecialchars($reg['name']); ?></td>
+                        <td><?php echo htmlspecialchars($reg['gender']); ?></td>
+                        <td><?php echo htmlspecialchars($reg['province']); ?></td>
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
 
                         <?php
                         $status = empty($reg['status']) ? 'Pending' : $reg['status'];
@@ -151,7 +165,11 @@ $registrations = getRegistrationsByEvent($event_id);
                         <td class="<?php echo $class_name; ?>"><?php echo $status; ?></td>
 
                         <td>
+<<<<<<< HEAD
                             <?php if (strtolower($status) == 'pending'): ?>
+=======
+                            <?php if ($status != 'Approved'): ?>
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
                                 <form action="/routes/Registration.php" method="POST" style="display:inline-block; margin: 0;">
                                     <input type="hidden" name="action" value="update_status">
                                     <input type="hidden" name="registration_id" value="<?php echo $reg['registration_id']; ?>">
@@ -159,7 +177,13 @@ $registrations = getRegistrationsByEvent($event_id);
                                     <input type="hidden" name="status" value="approved">
                                     <button type="submit" class="btn" style="cursor: pointer; color: #27ae60;" onclick="return confirm('ยืนยันการอนุมัติ?');">✅ อนุมัติ</button>
                                 </form>
+<<<<<<< HEAD
 
+=======
+                            <?php endif; ?>
+
+                            <?php if ($status != 'Rejected'): ?>
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
                                 <form action="/routes/Registration.php" method="POST" style="display:inline-block; margin: 0;">
                                     <input type="hidden" name="action" value="update_status">
                                     <input type="hidden" name="registration_id" value="<?php echo $reg['registration_id']; ?>">
@@ -167,6 +191,7 @@ $registrations = getRegistrationsByEvent($event_id);
                                     <input type="hidden" name="status" value="rejected">
                                     <button type="submit" class="btn" style="cursor: pointer; color: #e74c3c;" onclick="return confirm('ยืนยันการปฏิเสธ?');">❌ ปฏิเสธ</button>
                                 </form>
+<<<<<<< HEAD
                             <?php else: ?>
                                 <form action="/routes/Registration.php" method="POST" style="display:inline-block; margin: 0;">
                                     <input type="hidden" name="action" value="update_status">
@@ -175,6 +200,8 @@ $registrations = getRegistrationsByEvent($event_id);
                                     <input type="hidden" name="status" value="pending">
                                     <button type="submit" class="btn" style="cursor: pointer; color: #f39c12;" onclick="return confirm('ต้องการยกเลิกและนำกลับไปพิจารณาใหม่ใช่หรือไม่?');">🔄 ยกเลิก</button>
                                 </form>
+=======
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -187,6 +214,7 @@ $registrations = getRegistrationsByEvent($event_id);
         </tbody>
     </table>
 
+<<<<<<< HEAD
     <div id="userInfoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -231,6 +259,8 @@ $registrations = getRegistrationsByEvent($event_id);
             }
         }
     </script>
+=======
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
 </body>
 
 </html>

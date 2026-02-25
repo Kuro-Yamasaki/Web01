@@ -14,7 +14,11 @@ function generateUniqueUID() {
 
     while (!$is_unique) {
         // สุ่มตัวเลข 6 หลัก (เปลี่ยนช่วงตัวเลขได้ตามต้องการ เช่น 100000 - 999999)
+<<<<<<< HEAD
         $new_uid = mt_rand(10000000, 99999999); 
+=======
+        $new_uid = mt_rand(100000, 999999); 
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
         
         // เช็คในฐานข้อมูลว่ามี UID นี้หรือยัง
         $stmt = $conn->prepare("SELECT user_id FROM Users WHERE user_id = ?");

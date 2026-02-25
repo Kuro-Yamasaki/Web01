@@ -72,6 +72,7 @@ function createRegistration($user_id, $event_id)
 
     return $result;
 }
+<<<<<<< HEAD
 
 
 function getUserHistory($user_id) {
@@ -96,4 +97,6 @@ function getUserHistory($user_id) {
     }
     return $history;
 }
+=======
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
 ?>

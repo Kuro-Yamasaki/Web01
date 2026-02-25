@@ -36,9 +36,15 @@ $user_id = $_SESSION['user_id'];
         <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px; margin-bottom: 20px;">
 
         <div style="text-align: center;">
+<<<<<<< HEAD
             
 
             
+=======
+            <a href="/templates/home.php" style="text-decoration: none; background: #ecf0f1; color: #333; padding: 8px 15px; border-radius: 4px; margin: 5px; display: inline-block;">🏠 กลับหน้าแรก</a>
+
+            <a href="#" style="text-decoration: none; background: #3498db; color: white; padding: 8px 15px; border-radius: 4px; margin: 5px; display: inline-block;">📅 ประวัติการลงทะเบียน</a>
+>>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
 
             <a href="/routes/User.php?action=logout" style="text-decoration: none; background: #e74c3c; color: white; padding: 8px 15px; border-radius: 4px; margin: 5px; display: inline-block;" onclick="return confirm('ต้องการออกจากระบบใช่หรือไม่?');">🚪 ออกจากระบบ</a>
         </div>
