@@ -1,4 +1,4 @@
-session_start();
+
 <form action="/routes/event.php" method="POST" enctype="multipart/form-data">
     
     <input type="hidden" name="action" value="create">
