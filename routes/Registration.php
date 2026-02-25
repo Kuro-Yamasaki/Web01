@@ -36,8 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $status = $_POST['status'] ?? ''; 
         $event_id = $_POST['event_id'] ?? 0; 
 
-<<<<<<< HEAD
-        // ตรวจสอบว่าส่งค่ามาครบไหม (เพิ่ม 'pending' เข้าไปใน in_array ตรงนี้ครับ)
+        // จุดที่แก้ไข: เพิ่ม 'pending' เข้าไปใน in_array ตรงนี้ครับ
         if ($registration_id > 0 && in_array($status, ['approved', 'rejected', 'pending'])) {
             
             // เรียกใช้ฟังก์ชันอัปเดตสถานะในฐานข้อมูล
@@ -52,14 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $msg = 'ยกเลิกสถานะ กลับไปเป็นรอดำเนินการเรียบร้อยแล้ว';
                 }
 
-=======
-        // ตรวจสอบว่าส่งค่ามาครบไหม
-        if ($registration_id > 0 && in_array($status, ['approved', 'rejected'])) {
-            
-            // เรียกใช้ฟังก์ชันอัปเดตสถานะในฐานข้อมูล
-            if (updateRegistrationStatus($registration_id, $status)) {
-                $msg = ($status == 'approved') ? 'อนุมัติผู้เข้าร่วมแล้ว' : 'ปฏิเสธผู้เข้าร่วมแล้ว';
->>>>>>> 3fed582ddb5cdcb80a22209fe920349795b39c1d
                 echo "<script>
                         alert('$msg'); 
                         window.location.href='/templates/event_registrations.php?event_id=$event_id';
@@ -68,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 echo "<script>alert('เกิดข้อผิดพลาดในการอัปเดตสถานะฐานข้อมูล'); window.history.back();</script>";
             }
         } else {
-            
             echo "<script>alert('ข้อมูลที่ส่งมาไม่ครบถ้วน! กรุณาตรวจสอบฟอร์ม HTML'); window.history.back();</script>";
         }
         exit();

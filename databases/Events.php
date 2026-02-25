@@ -143,7 +143,8 @@ function searchEventsForHome($current_user_id, $search_name = '', $start_date = 
     global $conn;
     
     // Query พื้นฐาน (ซ่อนกิจกรรมที่ตัวเองสร้าง)
-    $sql = "SELECT e.*, u.name as organizer_name 
+    $sql = "SELECT e.*, u.name as organizer_name,
+            (SELECT COUNT(*) FROM Registrations r WHERE r.event_id = e.event_id AND r.status = 'approved') as current_participants
             FROM Events e 
             JOIN Users u ON e.organizer_id = u.user_id 
             WHERE e.organizer_id != ?";

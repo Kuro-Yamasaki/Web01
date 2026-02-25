@@ -52,18 +52,32 @@ function createRegistration($user_id, $event_id)
     global $conn;
 
     // 1. ตรวจสอบก่อนว่าเคยลงทะเบียนกิจกรรมนี้ไปแล้วหรือยัง
-    $check_sql = "SELECT registration_id FROM Registrations WHERE user_id = ? AND event_id = ?";
+    $check_sql = "SELECT registration_id, status FROM Registrations WHERE user_id = ? AND event_id = ?";
     $check_stmt = $conn->prepare($check_sql);
     $check_stmt->bind_param("ii", $user_id, $event_id);
     $check_stmt->execute();
+    $result = $check_stmt->get_result();
 
-    if ($check_stmt->get_result()->num_rows > 0) {
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
         $check_stmt->close();
+        
+        // **ส่วนที่เพิ่มมา:** ถ้าเคยโดนปฏิเสธ (rejected) ให้เปลี่ยนสถานะกลับไปเป็นรออนุมัติ (pending)
+        if (strtolower($row['status']) == 'rejected') {
+            $update_sql = "UPDATE Registrations SET status = 'pending' WHERE registration_id = ?";
+            $update_stmt = $conn->prepare($update_sql);
+            $update_stmt->bind_param("i", $row['registration_id']);
+            $res = $update_stmt->execute();
+            $update_stmt->close();
+            return $res;
+        }
+        
+        // ถ้าเป็น pending หรือ approved อยู่แล้ว จะไม่อนุญาตให้ทำซ้ำ
         return false; 
     }
     $check_stmt->close();
 
-    // 2. ถ้ายังไม่เคย ให้บันทึกข้อมูลใหม่ โดยกำหนดสถานะเริ่มต้นเป็น pending รออนุมัติ
+    // 2. ถ้ายังไม่เคย ให้บันทึกข้อมูลใหม่ 
     $sql = "INSERT INTO Registrations (user_id, event_id, status) VALUES (?, ?, 'pending')";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $user_id, $event_id);
@@ -96,4 +110,34 @@ function getUserHistory($user_id) {
     return $history;
 }
 
+function hasUserRegistered($user_id, $event_id) {
+    global $conn;
+    $sql = "SELECT registration_id FROM Registrations WHERE user_id = ? AND event_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $user_id, $event_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    // ถ้าเจอข้อมูลแปลว่าเคยลงทะเบียนแล้ว (return true) ถ้าไม่เจอให้ return false
+    $has_registered = $result->num_rows > 0;
+    $stmt->close();
+    
+    return $has_registered;
+}
+
+// ฟังก์ชันสำหรับดึงสถานะการลงทะเบียนของ User แบบระบุเจาะจง
+function getUserRegistrationStatus($user_id, $event_id) {
+    global $conn;
+    $sql = "SELECT status FROM Registrations WHERE user_id = ? AND event_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $user_id, $event_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return strtolower($row['status']); // คืนค่า 'pending', 'approved' หรือ 'rejected'
+    }
+    return false; // ถ้ายังไม่เคยลงทะเบียน
+}
 ?>
