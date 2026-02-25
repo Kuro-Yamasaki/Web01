@@ -109,7 +109,7 @@ $events = searchEventsForHome($_SESSION['user_id'], $search_name, $start_date, $
                         <td><?php echo $event['event_id']; ?></td>
                         <td><?php echo htmlspecialchars($event['event_name']); ?></td>
                         <td><?php echo htmlspecialchars($event['organizer_name']); ?></td>
-                        <td><?php echo date('d/m/Y H:i', strtotime($event['start_date'])); ?></td>
+                        <td><?php echo date('d/m/Y H:i', strtotime($event['start_date'])); ?> - <?php echo date('d/m/Y H:i', strtotime($event['end_date'])); ?></td>
                         <td><?php echo htmlspecialchars($event['location']); ?></td>
                         <td>
                             <?php

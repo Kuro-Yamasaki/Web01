@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../Include/database.php';
 require_once '../databases/Events.php';
 
@@ -20,6 +21,7 @@ $end_date_formatted = date('Y-m-d\TH:i', strtotime($event['end_date']));
     <title>แก้ไขกิจกรรม</title>
 </head>
 <body>
+    <?php include 'header.php'; ?>
     <h2>แก้ไขกิจกรรม: <?php echo htmlspecialchars($event['event_name']); ?></h2>
     
     <form action="/routes/Event.php" method="POST">
