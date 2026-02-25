@@ -1,8 +1,8 @@
 <?php
 $hostname = 'localhost';
-$dbName = 'events_web';
-$username = 'admin1';
-$password = 'abc123';
+$dbName = 'event_web';
+$username = 'tester';
+$password = '123abc';
 $conn = new mysqli($hostname, $username, $password, $dbName);
 
 function getConnection(): mysqli

@@ -139,4 +139,59 @@ function getEventsByOrganizer($organizer_id) {
     return $events;
 }
 
+function searchEventsForHome($current_user_id, $search_name = '', $start_date = '', $end_date = '') {
+    global $conn;
+    
+    // Query พื้นฐาน (ซ่อนกิจกรรมที่ตัวเองสร้าง)
+    $sql = "SELECT e.*, u.name as organizer_name 
+            FROM Events e 
+            JOIN Users u ON e.organizer_id = u.user_id 
+            WHERE e.organizer_id != ?";
+            
+    $types = "i";
+    $params = [$current_user_id];
+    
+    // 1. ถ้ามีการค้นหาด้วย "ชื่อกิจกรรม"
+    if (!empty($search_name)) {
+        $sql .= " AND e.event_name LIKE ?";
+        $types .= "s";
+        $params[] = "%" . $search_name . "%";
+    }
+    
+    // 2. ถ้ามีการค้นหาด้วย "วันเริ่มต้น"
+    if (!empty($start_date)) {
+        $sql .= " AND DATE(e.start_date) >= ?";
+        $types .= "s";
+        $params[] = $start_date;
+    }
+    
+    // 3. ถ้ามีการค้นหาด้วย "วันสิ้นสุด"
+    if (!empty($end_date)) {
+        // เช็คว่ากิจกรรมเริ่มก่อนหรือในวันสิ้นสุดที่ค้นหา
+        $sql .= " AND DATE(e.start_date) <= ?"; 
+        $types .= "s";
+        $params[] = $end_date;
+    }
+    
+    $sql .= " ORDER BY e.start_date DESC";
+    
+    $stmt = $conn->prepare($sql);
+    
+    // Bind parameters แบบไดนามิก
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $events = [];
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $events[] = $row;
+        }
+    }
+    return $events;
+}
+
 ?>
