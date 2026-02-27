@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         
 
-        if (createUser($userData)) {
+        if (createUser($userData)) 
+            {
             echo "<script>
                     alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ'); 
                     window.location.href='/templates/sign_in.php';
@@ -53,11 +54,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// --- ส่วนออกจากระบบ (Logout) แบบ GET ---
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $get_action = $_GET['action'] ?? '';
 
-    if ($get_action == 'logout') {
+    // 1. เช็คสิทธิ์การเข้าถึง (หน้าระบุใน Array นี้ ต้องล็อกอินก่อนถึงจะเข้าได้)
+    $requires_login = ['view_profile', 'view_history', 'manage_event'];
+    
+    // ถ้าพยายามเข้าหน้าในกลุ่มด้านบน แต่ยังไม่มี Session (ยังไม่ล็อกอิน) ให้เด้งกลับไปหน้า Sign In ทันที
+    if (in_array($get_action, $requires_login) && !isset($_SESSION['user_id'])) {
+        header("Location: ../templates/sign_in.php");
+        exit();
+    }
+
+    // 2. จัดการเส้นทาง (Routing) ว่าใครกดอะไรมา ให้ไปหน้าไหน
+    if ($get_action == 'go_home') {
+        header("Location: ../templates/home.php");
+        exit();
+        
+    } elseif ($get_action == 'view_profile') {
+        header("Location: ../templates/profile.php");
+        exit();
+        
+    } elseif ($get_action == 'view_history') {
+        header("Location: ../templates/history.php");
+        exit();
+        
+    } elseif ($get_action == 'manage_event') {
+        header("Location: ../templates/manage_event.php");
+        exit();
+        
+    } elseif ($get_action == 'logout') {
         session_unset(); 
         session_destroy(); 
         echo "<script>
