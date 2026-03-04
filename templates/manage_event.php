@@ -4,7 +4,6 @@ $user_id = $_SESSION['user_id'];
 require_once '../Include/database.php';
 require_once '../databases/Events.php';
 
-
 $events = getEventsByOrganizer($_SESSION['user_id']);
 ?>
 
@@ -21,8 +20,7 @@ $events = getEventsByOrganizer($_SESSION['user_id']);
             margin-top: 20px;
         }
 
-        th,
-        td {
+        th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
@@ -31,16 +29,24 @@ $events = getEventsByOrganizer($_SESSION['user_id']);
         th {
             background-color: #f2f2f2;
         }
+        
+        .action-links a {
+            color: #3498db;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+        
+        .action-links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
 <body>
 
-
     <?php include 'header.php' ?>
     <h2>จัดการกิจกรรม</h2>
-    <a href="/templates/create_event.php"> + สร้างกิจกรรมใหม่</a>
-
+    <a href="/templates/create_event.php" style="display: inline-block; background: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px;">+ สร้างกิจกรรมใหม่</a>
 
     <table>
         <thead>
@@ -65,18 +71,40 @@ $events = getEventsByOrganizer($_SESSION['user_id']);
                         <td><?php echo htmlspecialchars($event['location']); ?></td>
                         <td><?php echo $event['max_participants']; ?> คน</td>
                         <td>
-                            <a href="/templates/edit_event.php?id=<?php echo $event['event_id']; ?>">แก้ไข</a>
-                            <a href="/routes/Event.php?action=delete&id=<?php echo $event['event_id']; ?>" onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?');">ลบ</a>
-                            <a href="/templates/event_registrations.php?event_id=<?php echo $event['event_id']; ?>">ดูผู้สมัคร</a>
+                            <div class="action-links">
+                                <a href="/templates/edit_event.php?id=<?php echo $event['event_id']; ?>">✏️ แก้ไข</a> 
+                                <a href="/routes/Event.php?action=delete&id=<?php echo $event['event_id']; ?>" onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?');" style="color: #e74c3c;">🗑️ ลบ</a>
+                                <br>
+                                <a href="/templates/event_registrations.php?event_id=<?php echo $event['event_id']; ?>" style="display: inline-block; margin-top: 5px;">👥 ดูผู้สมัคร</a>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+
+                            <?php 
+                            // ตั้งค่าโซนเวลาให้เป็นเวลาไทย
+                            date_default_timezone_set('Asia/Bangkok');
+                            $current_time = date('Y-m-d H:i:s');
                             
-                            <form action="/routes/event.php" method="POST" style="display:inline;">
-    <input type="hidden" name="action" value="start_event_send_otp">
-    <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-    <button type="submit" onclick="return confirm('ยืนยันเริ่มงาน? ระบบจะสร้างรหัสและส่งเข้าอีเมลผู้เข้าร่วมที่ผ่านการอนุมัติทุกคน');" 
-            style="background-color: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-        🚀 เริ่มงาน & ส่งรหัสเข้าอีเมล
-    </button>
-</form>
+                            // เช็คว่างานเริ่มหรือยัง? (เช็คจาก is_otp_sent ว่าเป็น 1 หรือ เวลาปัจจุบันถึงเวลาเริ่มงานแล้ว)
+                            $is_started = (!empty($event['is_otp_sent']) && $event['is_otp_sent'] == 1) || ($current_time >= $event['start_date']);
+                            ?>
+
+                            <?php if ($is_started): ?>
+                                <a href="/templates/event_checkin.php?event_id=<?php echo $event['event_id']; ?>" 
+                                   style="display: inline-block; background-color: #27ae60; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold; text-align: center;">
+                                   ✅ ตรวจคนเข้างาน
+                                </a>
+                            <?php else: ?>
+                                <form action="/routes/event.php" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="action" value="start_event_generate_otp">
+                                    <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
+                                    <button type="submit" onclick="return confirm('ยืนยันเริ่มงาน? ระบบจะเปิดให้ผู้เข้าร่วมดูรหัสเข้างานได้ทันที');" 
+                                            style="background-color: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
+                                        🚀 เริ่มงาน & แจกรหัส
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
                         </td>
                     </tr>
                 <?php endforeach; ?>

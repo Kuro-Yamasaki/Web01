@@ -63,23 +63,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         exit();
     }
-    // --- 3. ส่วนตรวจสอบรหัส OTP (ผู้เข้าร่วมกรอก) ---
-    elseif ($action == 'verify_otp') {
-        $registration_id = $_POST['registration_id'] ?? 0;
-        $otp_input = trim($_POST['otp_input'] ?? '');
+    // --- 3. ส่วนผู้จัดงานตรวจสอบ OTP จากผู้เข้าร่วม ---
+    elseif ($action == 'verify_otp_frontdesk') {
+        $event_id = $_POST['event_id'] ?? 0;
+        $input_otp = trim($_POST['otp_input'] ?? '');
+        
+        // ดึงคนทั้งหมดที่ผ่านการอนุมัติในกิจกรรมนี้
+        $registrations = getRegistrationsByEvent($event_id);
+        $matched_user_name = '';
+        $matched_reg_id = 0;
 
-        // ค้นหารหัสจากฐานข้อมูล
-        $stmt = $conn->prepare("SELECT otp_code, is_checked_in FROM Registrations WHERE registration_id = ?");
-        $stmt->bind_param("i", $registration_id);
-        $stmt->execute();
-        $reg = $stmt->get_result()->fetch_assoc();
+        foreach ($registrations as $reg) {
+            // เช็คเฉพาะคนที่ได้รับการอนุมัติ และยังไม่ได้ถูกเช็คอิน
+            if (strtolower($reg['status']) == 'approved' && $reg['is_checked_in'] == 0) {
+                
+                // ใช้สมการเช็คว่ารหัสตรงไหม (ถ้ารหัสถูก ระบบจะรู้ทันทีว่าเป็นของใคร)
+                if (verifyDynamicOTP($reg['user_id'], $event_id, $input_otp)) {
+                    $matched_reg_id = $reg['registration_id'];
+                    $matched_user_name = $reg['name'];
+                    break;
+                }
+            }
+        }
 
-        if ($reg && $reg['otp_code'] === $otp_input) {
-            // ถ้ารหัสตรงกัน ให้อัปเดตสถานะเป็นเข้าร่วมแล้ว (Check-in)
-            updateCheckInStatus($registration_id, 1);
-            echo "<script>alert('ยืนยันเข้างานสำเร็จ! ขอให้สนุกกับกิจกรรมครับ 🎉'); window.location.href='/templates/history.php';</script>";
+        if ($matched_reg_id > 0) {
+            // อัปเดตสถานะเป็น "เข้าร่วมแล้ว"
+            updateCheckInStatus($matched_reg_id, 1);
+            echo "<script>alert('✅ เช็คอินสำเร็จ! รหัสนี้เป็นของคุณ: $matched_user_name'); window.location.href='/templates/event_checkin.php?event_id=$event_id';</script>";
         } else {
-            echo "<script>alert('รหัสเข้างานไม่ถูกต้อง กรุณาตรวจสอบอีเมลอีกครั้ง'); window.history.back();</script>";
+            echo "<script>alert('❌ รหัส OTP ไม่ถูกต้อง / หมดอายุแล้ว หรือผู้ใช้นี้เช็คอินไปแล้ว'); window.history.back();</script>";
         }
         exit();
     }

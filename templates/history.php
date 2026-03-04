@@ -58,13 +58,32 @@ $history = getUserHistory($user_id);
                         $status = empty($row['status']) ? 'pending' : strtolower($row['status']); 
                         $class_name = "text-" . $status;
                     ?>
-                    <td class="<?php echo $class_name; ?>">
-                        <?php 
-                            if ($status == 'approved') echo '✅ อนุมัติแล้ว';
-                            elseif ($status == 'rejected') echo '❌ ปฏิเสธ';
-                            else echo '⏳ รออนุมัติ';
-                        ?>
-                    </td>
+                    <td>
+    <?php 
+    // สมมติว่าตัวแปรวนลูปของคุณชื่อ $row หรือ $history หรือ $reg
+    // (ให้เปลี่ยน $row เป็นชื่อตัวแปรที่คุณใช้ในลูป foreach ของหน้านี้)
+    $status = strtolower($row['status']); 
+    
+    if ($status == 'approved'): 
+    ?>
+        <span style="color: #27ae60; font-weight: bold;">✅ อนุมัติแล้ว</span><br>
+        
+        <a href="/templates/enter_event.php?event_id=<?php echo $row['event_id']; ?>" 
+           style="display: inline-block; margin-top: 8px; background-color: #3498db; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+           🎟️ ดูตั๋ว / รหัสเข้างาน
+        </a>
+
+    <?php elseif ($status == 'pending'): ?>
+        <span style="color: #f39c12; font-weight: bold;">⏳ รอตรวจสอบ</span>
+        
+    <?php elseif ($status == 'rejected'): ?>
+        <span style="color: #e74c3c; font-weight: bold;">❌ ไม่อนุมัติ</span>
+        
+    <?php else: ?>
+        <span><?php echo htmlspecialchars($row['status']); ?></span>
+    <?php endif; ?>
+</td>
+                    
                 </tr>
                 <?php endforeach; ?>
             <?php else: ?>
