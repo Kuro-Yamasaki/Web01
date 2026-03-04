@@ -118,7 +118,7 @@ $registrations = getRegistrationsByEvent($event_id);
 <body>
 
     <h2>รายชื่อผู้ลงทะเบียนขอเข้าร่วมกิจกรรม: <?php echo htmlspecialchars($event['event_name']); ?></h2>
-    <a href="/templates/home.php">⬅ กลับหน้ารายการกิจกรรม</a>
+    <a href="/templates/manage_event.php">⬅ กลับหน้ารายการกิจกรรม</a>
 
     <table>
         <thead>

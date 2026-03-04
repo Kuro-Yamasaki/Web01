@@ -12,17 +12,131 @@ use PHPMailer\PHPMailer\Exception;
 
 
 // --- จัดการคำสั่งแบบ GET (สำหรับปุ่ม "ลบ") ---
-if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action'])) {
-    $action = $_GET['action'];
-    $id = $_GET['id'] ?? 0;
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-    if ($action == 'delete' && $id > 0) {
-        if (deleteEvent($id)) {
-            echo "<script>alert('ลบกิจกรรมเรียบร้อยแล้ว'); window.location.href='/templates/home.php';</script>";
-        } else {
-            echo "<script>alert('เกิดข้อผิดพลาดในการลบ'); window.history.back();</script>";
+// --- 1. สร้างกิจกรรมใหม่ ---
+if ($action == 'create') {
+    $organizer_id = $_SESSION['user_id'];
+    $event_name = $_POST['event_name'];
+    $description = $_POST['description'];
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'];
+    $location = $_POST['location'];
+    $max_participants = $_POST['max_participants'];
+
+    $stmt = $conn->prepare("INSERT INTO Events (organizer_id, event_name, description, start_date, end_date, location, max_participants) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssssi", $organizer_id, $event_name, $description, $start_date, $end_date, $location, $max_participants);
+    
+    if ($stmt->execute()) {
+        $new_event_id = $stmt->insert_id; // ดึง ID ของกิจกรรมที่เพิ่งสร้าง
+
+        // --- ระบบอัปโหลดรูปภาพ ---
+        if (!empty($_FILES['event_images']['name'][0])) {
+            $upload_dir = '../uploads/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+            foreach ($_FILES['event_images']['tmp_name'] as $key => $tmp_name) {
+                $file_name = time() . '_' . basename($_FILES['event_images']['name'][$key]);
+                $target_file = $upload_dir . $file_name;
+                
+                if (move_uploaded_file($tmp_name, $target_file)) {
+                    $db_image_path = '/uploads/' . $file_name;
+                    $img_stmt = $conn->prepare("INSERT INTO Event_Images (event_id, image_path) VALUES (?, ?)");
+                    $img_stmt->bind_param("is", $new_event_id, $db_image_path);
+                    $img_stmt->execute();
+                }
+            }
         }
+        echo "<script>alert('สร้างกิจกรรมเรียบร้อยแล้ว'); window.location.href='../templates/manage_event.php';</script>";
+    } else {
+        echo "<script>alert('เกิดข้อผิดพลาด'); window.history.back();</script>";
     }
+    exit();
+}
+
+// --- 2. อัปเดต/แก้ไขกิจกรรม ---
+elseif ($action == 'update') {
+    $event_id = $_POST['event_id'];
+    $event_name = $_POST['event_name'];
+    $description = $_POST['description'];
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'];
+    $location = $_POST['location'];
+    $max_participants = $_POST['max_participants'];
+
+    $stmt = $conn->prepare("UPDATE Events SET event_name=?, description=?, start_date=?, end_date=?, location=?, max_participants=? WHERE event_id=?");
+    $stmt->bind_param("sssssii", $event_name, $description, $start_date, $end_date, $location, $max_participants, $event_id);
+    
+    if ($stmt->execute()) {
+        // --- ระบบอัปโหลดรูปภาพเพิ่มเติม ---
+        if (!empty($_FILES['event_images']['name'][0])) {
+            $upload_dir = '../uploads/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+            foreach ($_FILES['event_images']['tmp_name'] as $key => $tmp_name) {
+                $file_name = time() . '_' . basename($_FILES['event_images']['name'][$key]);
+                $target_file = $upload_dir . $file_name;
+                
+                if (move_uploaded_file($tmp_name, $target_file)) {
+                    $db_image_path = '/uploads/' . $file_name;
+                    $img_stmt = $conn->prepare("INSERT INTO Event_Images (event_id, image_path) VALUES (?, ?)");
+                    $img_stmt->bind_param("is", $event_id, $db_image_path);
+                    $img_stmt->execute();
+                }
+            }
+        }
+        echo "<script>alert('อัปเดตข้อมูลสำเร็จ'); window.location.href='../templates/manage_event.php';</script>";
+    } else {
+        echo "<script>alert('เกิดข้อผิดพลาด'); window.history.back();</script>";
+    }
+    exit();
+}
+
+// --- 3. ลบรูปภาพออกจากกิจกรรม (เฉพาะรูปเดียว) ---
+elseif ($action == 'delete_image') {
+    $image_id = $_GET['image_id'];
+    $event_id = $_GET['event_id'];
+
+    $img_stmt = $conn->prepare("SELECT image_path FROM Event_Images WHERE image_id = ?");
+    $img_stmt->bind_param("i", $image_id);
+    $img_stmt->execute();
+    $img_res = $img_stmt->get_result()->fetch_assoc();
+
+    if ($img_res) {
+        $file_to_delete = '..' . $img_res['image_path'];
+        if (file_exists($file_to_delete)) {
+            unlink($file_to_delete);
+        }
+        $del_stmt = $conn->prepare("DELETE FROM Event_Images WHERE image_id = ?");
+        $del_stmt->bind_param("i", $image_id);
+        $del_stmt->execute();
+    }
+    echo "<script>window.location.href='/templates/edit_event.php?id=$event_id';</script>";
+    exit();
+}
+
+// --- 4. ลบกิจกรรมทั้งหมด ---
+elseif ($action == 'delete') {
+    $event_id = $_GET['id'];
+    
+    // ลบไฟล์รูปภาพจริงในโฟลเดอร์ก่อนลบกิจกรรม
+    $img_stmt = $conn->prepare("SELECT image_path FROM Event_Images WHERE event_id = ?");
+    $img_stmt->bind_param("i", $event_id);
+    $img_stmt->execute();
+    $images = $img_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    foreach ($images as $img) {
+        $file_to_delete = '..' . $img['image_path'];
+        if (file_exists($file_to_delete)) unlink($file_to_delete);
+    }
+
+    $stmt = $conn->prepare("DELETE FROM Events WHERE event_id = ?");
+    $stmt->bind_param("i", $event_id);
+    if ($stmt->execute()) {
+        echo "<script>alert('ลบกิจกรรมสำเร็จ'); window.location.href='../templates/manage_event.php';</script>";
+    } else {
+        echo "<script>alert('ไม่สามารถลบกิจกรรมได้'); window.history.back();</script>";
+    }
+    exit();
 }
 
 // --- จัดการคำสั่งแบบ POST (สำหรับ "อัปเดต" และ "สร้างใหม่") ---
@@ -46,70 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'location'         => $_POST['location'] ?? ''
     ];
 
-    // --- แก้ไขกิจกรรม (Update) ---
-    if ($action == 'update') {
-        $id = $_POST['event_id'];
-        if (updateEvent($id, $data)) {
-            echo "<script>alert('แก้ไขข้อมูลสำเร็จ!'); window.location.href='/templates/home.php';</script>";
-        } else {
-            echo "<script>alert('เกิดข้อผิดพลาดในการแก้ไข'); window.history.back();</script>";
-        }
-        exit();
-    }
-
-    // --- สร้างกิจกรรมใหม่ (Create) ---
-    elseif ($action == 'create') {
-
-        // 1. บันทึกข้อมูลกิจกรรมหลักก่อน เพื่อให้ได้ ID ของกิจกรรมที่เพิ่งสร้าง
-        $new_event_id = createEvent($data);
-
-        // ถ้าสร้างกิจกรรมหลักสำเร็จ และได้ ID กลับมา (ป้องกันค่าว่างหรือ false)
-        if ($new_event_id) {
-
-            // 2. จัดการอัปโหลดรูปภาพหลายไฟล์ (Multiple Uploads)
-            $upload_dir = __DIR__ . '/../uploads/';
-
-            // สร้างโฟลเดอร์ uploads อัตโนมัติถ้ายังไม่มี
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-
-            // เช็คว่ามีการแนบไฟล์จากฟอร์มมาหรือไม่ (ต้องใช้ช่อง input name="event_images[]")
-            if (isset($_FILES['event_images']) && !empty($_FILES['event_images']['name'][0])) {
-
-                $fileCount = count($_FILES['event_images']['name']);
-
-                // วนลูปอัปโหลดทีละไฟล์
-                for ($i = 0; $i < $fileCount; $i++) {
-                    if ($_FILES['event_images']['error'][$i] === UPLOAD_ERR_OK) {
-
-                        // ตั้งชื่อไฟล์ใหม่เพื่อป้องกันชื่อซ้ำ
-                        $file_name = time() . '_' . uniqid() . '_' . basename($_FILES['event_images']['name'][$i]);
-                        $target_file = $upload_dir . $file_name;
-
-                        // สั่งย้ายไฟล์จากไฟล์ชั่วคราว ไปลงโฟลเดอร์
-                        if (move_uploaded_file($_FILES['event_images']['tmp_name'][$i], $target_file)) {
-                            // บันทึกที่อยู่ไฟล์รูปภาพลงฐานข้อมูล
-                            $image_path = '/uploads/' . $file_name;
-                            addEventImage($new_event_id, $image_path);
-                        }
-                    }
-                }
-            }
-
-            echo "<script>
-                    alert('บันทึกกิจกรรมและอัปโหลดรูปภาพเรียบร้อยแล้ว!'); 
-                    window.location.href='/templates/home.php';
-                  </script>";
-            exit();
-        } else {
-            echo "<script>
-                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลกิจกรรมลงฐานข้อมูล'); 
-                    window.history.back();
-                  </script>";
-            exit();
-        }
-    }
+    
 }
 
 if ($_POST['action'] == 'start_event_send_otp') {
