@@ -142,6 +142,7 @@ $events = searchEventsForHome($_SESSION['user_id'], $search_name, $start_date, $
             /* ตัดคำให้โชว์แค่ 2 บรรทัด */
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
