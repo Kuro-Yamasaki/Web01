@@ -100,6 +100,13 @@ $registrations = getRegistrationsByEvent($event_id);
                         <td>
                             <?php if ($reg['is_checked_in'] == 0): ?>
                                 <a class="btn-checkin" href="/routes/Registration.php?action=checkin&id=<?php echo $reg['registration_id']; ?>&event_id=<?php echo $event_id; ?>">👉 แมนนวลเช็คชื่อ</a>
+                                
+                                <a href="/routes/Registration.php?action=send_otp_email&id=<?php echo $reg['registration_id']; ?>&event_id=<?php echo $event_id; ?>" 
+                                   onclick="return confirm('ส่งรหัส OTP ปัจจุบันไปที่อีเมลของผู้ใช้นี้ใช่หรือไม่?');" 
+                                   style="background-color: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-left: 5px; font-size: 14px;">
+                                   ✉️ ส่ง OTP เข้าเมล
+                                </a>
+
                             <?php else: ?>
                                 <a class="btn-undo" href="/routes/Registration.php?action=undo_checkin&id=<?php echo $reg['registration_id']; ?>&event_id=<?php echo $event_id; ?>" onclick="return confirm('ต้องการยกเลิกการเช็คอินของคนนี้ใช่หรือไม่?');">ยกเลิก</a>
                             <?php endif; ?>

@@ -2,17 +2,22 @@
 session_start();
 require_once '../Include/database.php';
 require_once '../databases/Events.php';
-require '../PHPMailer/Exception.php';
-require '../PHPMailer/PHPMailer.php';
-require '../PHPMailer/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+require '../PHPMailer/Exception.php';
+require '../PHPMailer/PHPMailer.php';
+require '../PHPMailer/SMTP.php';
 
-
-// --- จัดการคำสั่งแบบ GET (สำหรับปุ่ม "ลบ") ---
+// รับค่า action (รองรับทั้ง POST และ GET)
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// ถ้าไม่มีการล็อกอิน ให้เด้งกลับไปหน้า sign_in
+if (empty($_SESSION['user_id']) && $action != '') {
+    echo "<script>alert('กรุณาเข้าสู่ระบบก่อนทำรายการ!'); window.location.href='/templates/sign_in.php';</script>";
+    exit();
+}
 
 // --- 1. สร้างกิจกรรมใหม่ ---
 if ($action == 'create') {
@@ -22,13 +27,13 @@ if ($action == 'create') {
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
     $location = $_POST['location'];
-    $max_participants = $_POST['max_participants'];
+    $max_participants = !empty($_POST['max_participants']) ? $_POST['max_participants'] : null;
 
     $stmt = $conn->prepare("INSERT INTO Events (organizer_id, event_name, description, start_date, end_date, location, max_participants) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isssssi", $organizer_id, $event_name, $description, $start_date, $end_date, $location, $max_participants);
     
     if ($stmt->execute()) {
-        $new_event_id = $stmt->insert_id; // ดึง ID ของกิจกรรมที่เพิ่งสร้าง
+        $new_event_id = $stmt->insert_id;
 
         // --- ระบบอัปโหลดรูปภาพ ---
         if (!empty($_FILES['event_images']['name'][0])) {
@@ -49,7 +54,7 @@ if ($action == 'create') {
         }
         echo "<script>alert('สร้างกิจกรรมเรียบร้อยแล้ว'); window.location.href='../templates/manage_event.php';</script>";
     } else {
-        echo "<script>alert('เกิดข้อผิดพลาด'); window.history.back();</script>";
+        echo "<script>alert('เกิดข้อผิดพลาดในการสร้างกิจกรรม'); window.history.back();</script>";
     }
     exit();
 }
@@ -62,13 +67,12 @@ elseif ($action == 'update') {
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
     $location = $_POST['location'];
-    $max_participants = $_POST['max_participants'];
+    $max_participants = !empty($_POST['max_participants']) ? $_POST['max_participants'] : null;
 
     $stmt = $conn->prepare("UPDATE Events SET event_name=?, description=?, start_date=?, end_date=?, location=?, max_participants=? WHERE event_id=?");
     $stmt->bind_param("sssssii", $event_name, $description, $start_date, $end_date, $location, $max_participants, $event_id);
     
     if ($stmt->execute()) {
-        // --- ระบบอัปโหลดรูปภาพเพิ่มเติม ---
         if (!empty($_FILES['event_images']['name'][0])) {
             $upload_dir = '../uploads/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
@@ -87,7 +91,7 @@ elseif ($action == 'update') {
         }
         echo "<script>alert('อัปเดตข้อมูลสำเร็จ'); window.location.href='../templates/manage_event.php';</script>";
     } else {
-        echo "<script>alert('เกิดข้อผิดพลาด'); window.history.back();</script>";
+        echo "<script>alert('เกิดข้อผิดพลาดในการอัปเดต'); window.history.back();</script>";
     }
     exit();
 }
@@ -119,7 +123,6 @@ elseif ($action == 'delete_image') {
 elseif ($action == 'delete') {
     $event_id = $_GET['id'];
     
-    // ลบไฟล์รูปภาพจริงในโฟลเดอร์ก่อนลบกิจกรรม
     $img_stmt = $conn->prepare("SELECT image_path FROM Event_Images WHERE event_id = ?");
     $img_stmt->bind_param("i", $event_id);
     $img_stmt->execute();
@@ -139,31 +142,8 @@ elseif ($action == 'delete') {
     exit();
 }
 
-// --- จัดการคำสั่งแบบ POST (สำหรับ "อัปเดต" และ "สร้างใหม่") ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    // 1. เช็คการเข้าสู่ระบบก่อน! ถ้ายังไม่ล็อกอินห้ามทำรายการ
-    if (empty($_SESSION['user_id'])) {
-        echo "<script>alert('กรุณาเข้าสู่ระบบก่อนทำรายการ!'); window.location.href='/templates/sign_in.php';</script>";
-        exit();
-    }
-
-    // 2. เตรียมข้อมูลพื้นฐาน
-    $data = [
-        'organizer_id'     => $_SESSION['user_id'],
-        'event_name'       => $_POST['event_name'] ?? '',
-        'description'      => $_POST['description'] ?? '',
-        'start_date'       => $_POST['start_date'] ?? '',
-        'end_date'         => $_POST['end_date'] ?? '',
-        'max_participants' => !empty($_POST['max_participants']) ? $_POST['max_participants'] : null,
-        'location'         => $_POST['location'] ?? ''
-    ];
-
-    
-}
-
-if ($_POST['action'] == 'start_event_send_otp') {
+// --- 5. ปุ่มเริ่มงาน (เปิดให้ผู้เข้าร่วมดูตั๋ว + โชว์หน้าเช็คชื่อ) ---
+elseif ($action == 'start_event_generate_otp') {
     $event_id = $_POST['event_id'];
 
     // 1. เช็คว่าเคยส่งไปหรือยัง ป้องกันกดเบิ้ล
@@ -231,3 +211,4 @@ if ($_POST['action'] == 'start_event_send_otp') {
     echo "<script>alert('สร้างและส่งรหัสเข้างานให้ผู้เข้าร่วมทุกคนเรียบร้อยแล้ว!'); window.location.href='../templates/manage_event.php';</script>";
     exit();
 }
+?>
