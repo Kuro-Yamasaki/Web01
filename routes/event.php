@@ -104,4 +104,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
+
+if ($_POST['action'] == 'start_event_send_otp') {
+    $event_id = $_POST['event_id'];
+    
+    // 1. เช็คว่าเคยส่งไปหรือยัง ป้องกันกดเบิ้ล
+    $evt_stmt = $conn->prepare("SELECT event_name, is_otp_sent FROM Events WHERE event_id = ?");
+    $evt_stmt->bind_param("i", $event_id);
+    $evt_stmt->execute();
+    $event_data = $evt_stmt->get_result()->fetch_assoc();
+
+    if ($event_data['is_otp_sent'] == 1) {
+        echo "<script>alert('ส่งรหัสไปแล้ว ไม่สามารถส่งซ้ำได้!'); window.history.back();</script>";
+        exit();
+    }
+
+    // 2. ดึงเฉพาะคนที่สถานะ 'approved' (อนุมัติแล้ว)
+    $stmt = $conn->prepare("SELECT r.registration_id, u.email, u.name FROM Registrations r JOIN Users u ON r.user_id = u.user_id WHERE r.event_id = ? AND r.status = 'approved'");
+    $stmt->bind_param("i", $event_id);
+    $stmt->execute();
+    $participants = $stmt->get_result();
+
+    // 3. วนลูปสร้างรหัสและส่งอีเมล
+    while ($user = $participants->fetch_assoc()) {
+        $otp_code = rand(100000, 999999); // สุ่มเลข 6 หลัก
+        $reg_id = $user['registration_id'];
+        $email = $user['email'];
+
+        // อัปเดตรหัสลงฐานข้อมูล
+        $update_otp = $conn->prepare("UPDATE Registrations SET otp_code = ? WHERE registration_id = ?");
+        $update_otp->bind_param("si", $otp_code, $reg_id);
+        $update_otp->execute();
+
+        // **โค้ดส่งอีเมล (ถ้าขึ้นโฮสต์จริง)**
+        $subject = "รหัสเข้างาน: " . $event_data['event_name'];
+        $message = "รหัสเข้างานของคุณคือ: $otp_code \nกรุณานำรหัสนี้ไปกรอกในเว็บ หรือแสดง QR Code หน้างานครับ";
+        $headers = "From: noreply@yourevent.com";
+        @mail($email, $subject, $message, $headers); 
+    }
+
+    // 4. เปลี่ยนสถานะกิจกรรมว่าส่งอีเมลแล้ว
+    $conn->query("UPDATE Events SET is_otp_sent = 1 WHERE event_id = $event_id");
+
+    echo "<script>alert('สร้างและส่งรหัสเข้างานให้ผู้เข้าร่วมทุกคนเรียบร้อยแล้ว!'); window.location.href='../templates/manage_event.php';</script>";
+    exit();
+}
 ?>

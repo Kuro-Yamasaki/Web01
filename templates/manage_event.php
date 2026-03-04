@@ -68,7 +68,15 @@ $events = getEventsByOrganizer($_SESSION['user_id']);
                             <a href="/templates/edit_event.php?id=<?php echo $event['event_id']; ?>">แก้ไข</a>
                             <a href="/routes/Event.php?action=delete&id=<?php echo $event['event_id']; ?>" onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?');">ลบ</a>
                             <a href="/templates/event_registrations.php?event_id=<?php echo $event['event_id']; ?>">ดูผู้สมัคร</a>
-                            | <a href="/templates/event_checkin.php?event_id=<?php echo $event['event_id']; ?>">เช็คชื่อหน้างาน</a>
+                            
+                            <form action="/routes/event.php" method="POST" style="display:inline;">
+    <input type="hidden" name="action" value="start_event_send_otp">
+    <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
+    <button type="submit" onclick="return confirm('ยืนยันเริ่มงาน? ระบบจะสร้างรหัสและส่งเข้าอีเมลผู้เข้าร่วมที่ผ่านการอนุมัติทุกคน');" 
+            style="background-color: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+        🚀 เริ่มงาน & ส่งรหัสเข้าอีเมล
+    </button>
+</form>
                         </td>
                     </tr>
                 <?php endforeach; ?>

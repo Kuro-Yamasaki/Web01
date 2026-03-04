@@ -63,5 +63,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         exit();
     }
+    // --- 3. ส่วนตรวจสอบรหัส OTP (ผู้เข้าร่วมกรอก) ---
+    elseif ($action == 'verify_otp') {
+        $registration_id = $_POST['registration_id'] ?? 0;
+        $otp_input = trim($_POST['otp_input'] ?? '');
+
+        // ค้นหารหัสจากฐานข้อมูล
+        $stmt = $conn->prepare("SELECT otp_code, is_checked_in FROM Registrations WHERE registration_id = ?");
+        $stmt->bind_param("i", $registration_id);
+        $stmt->execute();
+        $reg = $stmt->get_result()->fetch_assoc();
+
+        if ($reg && $reg['otp_code'] === $otp_input) {
+            // ถ้ารหัสตรงกัน ให้อัปเดตสถานะเป็นเข้าร่วมแล้ว (Check-in)
+            updateCheckInStatus($registration_id, 1);
+            echo "<script>alert('ยืนยันเข้างานสำเร็จ! ขอให้สนุกกับกิจกรรมครับ 🎉'); window.location.href='/templates/history.php';</script>";
+        } else {
+            echo "<script>alert('รหัสเข้างานไม่ถูกต้อง กรุณาตรวจสอบอีเมลอีกครั้ง'); window.history.back();</script>";
+        }
+        exit();
+    }
 }
 ?>
