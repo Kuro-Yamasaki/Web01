@@ -154,7 +154,7 @@ elseif ($action == 'send_otp_email') {
             $mail->Username   = 'webproject.ajm.noreply@gmail.com'; // 🛑 เปลี่ยนตรงนี้
             $mail->Password   = 'vhjqrfxpvswtdkal';  // 🛑 เปลี่ยนตรงนี้ (เอาช่องว่างออกด้วย)
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;
+            $mail->Port       = 465;//
             $mail->CharSet    = 'UTF-8'; // ให้รองรับภาษาไทย
 
             // ตั้งค่าอีเมล
